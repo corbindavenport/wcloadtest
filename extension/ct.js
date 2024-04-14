@@ -6,14 +6,6 @@ request = {action: 'should_scroll'}
 
 var PLAY_MUSIC_HOSTNAME = 'play.google.com';
 
-function report_scrolling_to_test() {
-  //Sends message to PLT informing that user is scrolling on the browser.
-  var scroll_url = 'http://localhost:8001/scroll';
-  var req = new XMLHttpRequest();
-  req.open('GET', scroll_url, true);
-  req.send("");
-}
-
 chrome.runtime.onMessage.addListener(
   function(message, sender, callback) {
     if (message == "numberOfVideosPlaying") {
@@ -44,7 +36,6 @@ function sendSuccessToBGScript() {
       lastOffset = window.pageYOffset;
       var start_interval = Math.max(1000, response.scroll_interval);
       function smoothScrollDown() {
-        report_scrolling_to_test();
         window.scrollBy(0, response.scroll_by);
         if (window.pageYOffset != lastOffset) {
           lastOffset = window.pageYOffset;
@@ -54,7 +45,6 @@ function sendSuccessToBGScript() {
         }
       }
       function smoothScrollUp() {
-        report_scrolling_to_test();
         window.scrollBy(0, -1 * response.scroll_by);
         if (window.pageYOffset != lastOffset) {
           lastOffset = window.pageYOffset;

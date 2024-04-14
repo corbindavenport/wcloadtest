@@ -30,7 +30,9 @@ function setupTest() {
     page_timestamps_recorder = {};
     keys_values = [];
     record_log_entry(dateToString(new Date()) + " Loop started");
-    setTimeout(send_summary, end);
+    setTimeout(function() {
+      console.log('Loop ended.')
+    }, end);
   });
 }
 
@@ -109,14 +111,6 @@ function testListener(request, sender, sendResponse) {
   }
 }
 
-function report_page_nav_to_test() {
-  //Sends message to PLT informing that user is navigating to new page.
-  var ping_url = 'http://localhost:8001/pagenav';
-  var req = new XMLHttpRequest();
-  req.open('GET', ping_url, true);
-  req.send("");
-}
-
 function capture_completed_status(details) {
   var tabId = details.tabId;
   if (!(details.tabId in error_codes)) {
@@ -152,7 +146,6 @@ function cycle_navigate(cycle) {
   }
   page_timestamps_new_record(cycle.id, url, start);
   chrome.tabs.update(cycle.id, {'url': url, 'selected': true});
-  report_page_nav_to_test()
   cycle.idx = (cycle.idx + 1) % cycle.urls.length;
   if (cycle.timeout < cycle.delay / time_ratio && cycle.timeout > 0) {
     cycle.timer = setTimeout(cycle_check_timeout, cycle.timeout, cycle);
@@ -286,17 +279,6 @@ function record_key_values(dictionary) {
   keys_values.push(dictionary);
 }
 
-function send_log_entries() {
-  var post = [];
-  log_lines.forEach(function (item, index) {
-    var entry = encodeURIComponent(item);
-    post.push('log'+ index + '=' + entry);
-  });
-
-  var log_url = 'http://localhost:8001/log';
-  send_post_data(post, log_url)
-}
-
 function send_status() {
   var post = ["status=good"];
 
@@ -307,43 +289,6 @@ function send_status() {
   }
   // chrome.power.requestKeepAwake('display'); <-- chromium deleted this line, but I wonder if it's important for WC's purposes. I'll leave it commented out so we can put it back in if removing it causes problems.
   chrome.runtime.onMessage.removeListener(testListener);
-
-  var status_url = 'http://localhost:8001/status';
-  send_post_data(post, status_url)
-}
-
-function send_raw_page_time_info() {
-  var post = [];
-  page_timestamps.forEach(function (item, index) {
-    post.push('page_time_data'+ index + "=" + JSON.stringify(item));
-  })
-
-  var pagetime_info_url = 'http://localhost:8001/pagetime';
-  send_post_data(post, pagetime_info_url)
-}
-
-function send_key_values() {
-  var post = [];
-  keys_values.forEach(function (item, index) {
-    post.push("keyval" + index + "=" + JSON.stringify(item));
-  })
-  var key_values_info_url = 'http://localhost:8001/keyvalues';
-  send_post_data(post, key_values_info_url)
-}
-
-function send_post_data(post, url) {
-  var req = new XMLHttpRequest();
-  req.open('POST', url, true);
-  req.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
-  req.send(post.join("&"));
-  console.log(post.join("&"));
-}
-
-function send_summary() {
-  send_raw_page_time_info();
-  send_key_values();
-  send_status();
-  send_log_entries();
 }
 
 function startTest() {
