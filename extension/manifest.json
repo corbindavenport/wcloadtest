@@ -15,7 +15,8 @@
     "webRequest",
     "http://*/",
     "https://*/",
-    "tabs"
+    "tabs",
+    "power"
   ],
   "background": {
     "persistent": true,

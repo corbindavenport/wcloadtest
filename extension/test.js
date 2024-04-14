@@ -16,12 +16,14 @@ var loop_hours = 20; // Kevin's variable to loop 20 hours
 var keys_values = [];
 
 function setupTest() {
-  //adding these listeners to track request failure codes
+  // Request display to not turn off during test
+  chrome.power.requestKeepAwake('display');
+  // These listeners track request failure codes
   chrome.webRequest.onCompleted.addListener(capture_completed_status,
-                                            {urls: ["<all_urls>"]});
-  chrome.windows.getAll(null, function(windows) {
+    { urls: ["<all_urls>"] });
+  chrome.windows.getAll(null, function (windows) {
     preexisting_windows = windows;
-    for (var i = 0; i < tasks.length; i++) { 
+    for (var i = 0; i < tasks.length; i++) {
       setTimeout(launch_task, tasks[i].start / time_ratio, tasks[i]);
     }
     var end = 3600 * 1000 / time_ratio;
@@ -30,7 +32,7 @@ function setupTest() {
     page_timestamps_recorder = {};
     keys_values = [];
     record_log_entry(dateToString(new Date()) + " Loop started");
-    setTimeout(function() {
+    setTimeout(function () {
       console.log('Loop ended.')
     }, end);
   });
@@ -48,7 +50,7 @@ function close_preexisting_windows() {
 // restores the tabs from the previous session. Currently this behaviour is
 // not observed on Ash due to a bug b/269545815.
 function close_restored_tabs(win, callback) {
-  chrome.tabs.query({windowId: win.id}, (tabs) => {
+  chrome.tabs.query({ windowId: win.id }, (tabs) => {
     if (chrome.runtime.lastError) {
       console.error(
         "close_restored_tabs: chrome.tabs.query resulted in an error: "
@@ -101,11 +103,13 @@ function testListener(request, sender, sendResponse) {
     url = get_active_url(cycle);
     record_log_entry(dateToString(new Date()) + " [load success] " + url);
     if (request.action == "should_scroll" && cycle.focus) {
-      sendResponse({"should_scroll": should_scroll,
-                    "should_scroll_up": should_scroll_up,
-                    "scroll_loop": scroll_loop,
-                    "scroll_interval": scroll_interval_ms,
-                    "scroll_by": scroll_by_pixels});
+      sendResponse({
+        "should_scroll": should_scroll,
+        "should_scroll_up": should_scroll_up,
+        "scroll_loop": scroll_loop,
+        "scroll_interval": scroll_interval_ms,
+        "scroll_by": scroll_by_pixels
+      });
     }
     delete cycle_tabs[sender.tab.id];
   }
@@ -117,7 +121,7 @@ function capture_completed_status(details) {
     error_codes[tabId] = [];
   }
   var report = {
-    'url':details.url,
+    'url': details.url,
     'code': details.statusCode,
     'status': details.statusLine,
     'time': new Date(details.timeStamp)
@@ -145,7 +149,7 @@ function cycle_navigate(cycle) {
     console.log(JSON.stringify(page_timestamps));
   }
   page_timestamps_new_record(cycle.id, url, start);
-  chrome.tabs.update(cycle.id, {'url': url, 'selected': true});
+  chrome.tabs.update(cycle.id, { 'url': url, 'selected': true });
   cycle.idx = (cycle.idx + 1) % cycle.urls.length;
   if (cycle.timeout < cycle.delay / time_ratio && cycle.timeout > 0) {
     cycle.timer = setTimeout(cycle_check_timeout, cycle.timeout, cycle);
@@ -156,15 +160,15 @@ function cycle_navigate(cycle) {
 
 function record_error_codes(cycle) {
   var error_report = dateToString(new Date()) + " [load failure details] "
-                     + get_active_url(cycle) + "\n";
+    + get_active_url(cycle) + "\n";
   var reports = error_codes[cycle.id];
   for (var i = 0; i < reports.length; i++) {
     report = reports[i];
     error_report = error_report + "\t\t" +
-    dateToString(report.time) + " | " +
-    "[response code] " + report.code + " | " +
-    "[url] " + report.url + " | " +
-    "[status line] " + report.status + "\n";
+      dateToString(report.time) + " | " +
+      "[response code] " + report.code + " | " +
+      "[url] " + report.url + " | " +
+      "[status line] " + report.status + "\n";
   }
   log_lines.push(error_report);
   console.log(error_report);
@@ -175,71 +179,71 @@ function cycle_check_timeout(cycle) {
     cycle.failed_loads++;
     record_error_codes(cycle);
     record_log_entry(dateToString(new Date()) + " [load failure] " +
-                                  get_active_url(cycle));
+      get_active_url(cycle));
     cycle_navigate(cycle);
   } else {
     cycle.timer = setTimeout(cycle_navigate,
-                             cycle.delay / time_ratio - cycle.timeout,
-                             cycle);
+      cycle.delay / time_ratio - cycle.timeout,
+      cycle);
   }
 }
 
 function launch_task(task) {
   if (task.type == 'window' && task.tabs) {
     chrome.windows.create(
-      {'url': '/focus.html', state: 'maximized'}, function (win) {
-      close_preexisting_windows();
-      
-      close_restored_tabs(win, function() {
-        chrome.tabs.getSelected(win.id, function(tab) {
-          for (var i = 1; i < task.tabs.length; i++) {
-            chrome.tabs.create({'windowId':win.id, 'url': '/focus.html'});
-          }
-          chrome.tabs.getAllInWindow(win.id, function(tabs) {
-            for (var i = 0; i < tabs.length; i++) {
-              tab = tabs[i];
-              url = task.tabs[i];
-              start = Date.now();
-              page_timestamps_new_record(tab.id, url, start);
-              chrome.tabs.update(tab.id, {'url': url, 'selected': true});
+      { 'url': '/focus.html', state: 'maximized' }, function (win) {
+        close_preexisting_windows();
+
+        close_restored_tabs(win, function () {
+          chrome.tabs.getSelected(win.id, function (tab) {
+            for (var i = 1; i < task.tabs.length; i++) {
+              chrome.tabs.create({ 'windowId': win.id, 'url': '/focus.html' });
             }
-            console.log(JSON.stringify(page_timestamps_recorder));
+            chrome.tabs.getAllInWindow(win.id, function (tabs) {
+              for (var i = 0; i < tabs.length; i++) {
+                tab = tabs[i];
+                url = task.tabs[i];
+                start = Date.now();
+                page_timestamps_new_record(tab.id, url, start);
+                chrome.tabs.update(tab.id, { 'url': url, 'selected': true });
+              }
+              console.log(JSON.stringify(page_timestamps_recorder));
+            });
+            setTimeout(function (win_id) {
+              record_end_browse_time_for_window(win_id);
+              chrome.windows.remove(win_id);
+            }, (task.duration / time_ratio), win.id);
           });
-          setTimeout(function(win_id) {
-            record_end_browse_time_for_window(win_id);
-            chrome.windows.remove(win_id);
-          }, (task.duration / time_ratio), win.id);
         });
       });
-    });
   } else if (task.type == 'cycle' && task.urls) {
     chrome.windows.create(
-      {'url': '/focus.html', state: 'maximized'}, function (win) {
-      close_preexisting_windows();
-      close_restored_tabs(win, function() {
-        chrome.tabs.getSelected(win.id, function(tab) {
-          var cycle = {
-             'timeout': task.timeout,
-             'name': task.name,
-             'delay': task.delay,
-             'urls': task.urls,
-             'id': tab.id,
-             'idx': 0,
-             'timer': null,
-             'focus': !!task.focus,
-             'successful_loads': 0,
-             'failed_loads': 0
-          };
-          cycles[task.name] = cycle;
-          cycle_navigate(cycle);
-          setTimeout(function(cycle, win_id) {
-            clearTimeout(cycle.timer);
-            record_end_browse_time_for_window(win_id);
-            chrome.windows.remove(win_id);
-          }, task.duration / time_ratio, cycle, win.id);
+      { 'url': '/focus.html', state: 'maximized' }, function (win) {
+        close_preexisting_windows();
+        close_restored_tabs(win, function () {
+          chrome.tabs.getSelected(win.id, function (tab) {
+            var cycle = {
+              'timeout': task.timeout,
+              'name': task.name,
+              'delay': task.delay,
+              'urls': task.urls,
+              'id': tab.id,
+              'idx': 0,
+              'timer': null,
+              'focus': !!task.focus,
+              'successful_loads': 0,
+              'failed_loads': 0
+            };
+            cycles[task.name] = cycle;
+            cycle_navigate(cycle);
+            setTimeout(function (cycle, win_id) {
+              clearTimeout(cycle.timer);
+              record_end_browse_time_for_window(win_id);
+              chrome.windows.remove(win_id);
+            }, task.duration / time_ratio, cycle, win.id);
+          });
         });
       });
-    });
   }
 }
 
@@ -255,7 +259,7 @@ function page_timestamps_new_record(tab_id, url, start) {
 }
 
 function record_end_browse_time_for_window(win_id) {
-  chrome.tabs.getAllInWindow(win_id, function(tabs) {
+  chrome.tabs.getAllInWindow(win_id, function (tabs) {
     end = Date.now();
     console.log("page_timestamps_recorder:");
     console.log(JSON.stringify(page_timestamps_recorder));
@@ -287,7 +291,7 @@ function send_status() {
     post.push(name + "_successful_loads=" + cycle.successful_loads);
     post.push(name + "_failed_loads=" + cycle.failed_loads);
   }
-  // chrome.power.requestKeepAwake('display'); <-- chromium deleted this line, but I wonder if it's important for WC's purposes. I'll leave it commented out so we can put it back in if removing it causes problems.
+  chrome.power.requestKeepAwake('display');
   chrome.runtime.onMessage.removeListener(testListener);
 }
 
@@ -299,7 +303,7 @@ function startTest() {
 
 function initialize() {
   // Called when the user clicks on the browser action.
-  chrome.browserAction.onClicked.addListener(function(tab) {
+  chrome.browserAction.onClicked.addListener(function (tab) {
     // Start the test with default settings.
     chrome.runtime.onMessage.addListener(testListener);
     for (var i = 0; i < loop_hours; i++) {
