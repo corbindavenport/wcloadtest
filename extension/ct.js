@@ -33,12 +33,12 @@ function sendSuccessToBGScript() {
   chrome.runtime.sendMessage(request, function(response) {
     if (response && response.should_scroll) {
       window.focus();
-      lastOffset = window.pageYOffset;
+      lastOffset = window.scrollY;
       var start_interval = Math.max(1000, response.scroll_interval);
       function smoothScrollDown() {
         window.scrollBy(0, response.scroll_by);
-        if (window.pageYOffset != lastOffset) {
-          lastOffset = window.pageYOffset;
+        if (window.scrollY != lastOffset) {
+          lastOffset = window.scrollY;
           setTimeout(smoothScrollDown, response.scroll_interval);
         } else if (response.should_scroll_up) {
           setTimeout(smoothScrollUp, start_interval);
@@ -46,8 +46,8 @@ function sendSuccessToBGScript() {
       }
       function smoothScrollUp() {
         window.scrollBy(0, -1 * response.scroll_by);
-        if (window.pageYOffset != lastOffset) {
-          lastOffset = window.pageYOffset;
+        if (window.scrollY != lastOffset) {
+          lastOffset = window.scrollY;
           setTimeout(smoothScrollUp, response.scroll_interval);
         } else if (response.scroll_loop) {
           setTimeout(smoothScrollDown, start_interval);
