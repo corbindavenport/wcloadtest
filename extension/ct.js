@@ -2,16 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-request = {action: 'should_scroll'}
-
-var PLAY_MUSIC_HOSTNAME = 'play.google.com';
+request = { action: 'should_scroll' }
 
 chrome.runtime.onMessage.addListener(
-  function(message, sender, callback) {
+  function (message, sender, callback) {
     if (message == "numberOfVideosPlaying") {
       callback(numberOfVideosPlaying());
     }
-});
+  });
 
 function numberOfVideosPlaying() {
   let number_of_videos_playing = 0;
@@ -24,13 +22,9 @@ function numberOfVideosPlaying() {
   return number_of_videos_playing;
 }
 
-
-//Sends message to the test.js(background script). test.js on
-//receiving a message from content script assumes the page has
-//loaded successfully. It further responds with instructions on
-//whether/how to scroll.
+// Sends message to the test.js(background script). test.js onreceiving a message from content script assumes the page has loaded successfully. It further responds with instructions on whether/how to scroll.
 function sendSuccessToBGScript() {
-  chrome.runtime.sendMessage(request, function(response) {
+  chrome.runtime.sendMessage(request, function (response) {
     if (response && response.should_scroll) {
       window.focus();
       lastOffset = window.scrollY;
@@ -58,21 +52,6 @@ function sendSuccessToBGScript() {
   });
 }
 
-function afterLoad() {
-  if (document.location.hostname !== PLAY_MUSIC_HOSTNAME) {
-    sendSuccessToBGScript();
-    return;
-  }
-
-  var playButton = document.querySelector('[data-id="play"]');
-
-  //If play music website, if we do not see a play button
-  //that effectively means the music is not loaded. So do not
-  //report success load to test.js.
-  if (playButton) {
-    sendSuccessToBGScript();
-    playButton.click();
-  }
-}
-
-window.addEventListener('load', afterLoad);
+window.addEventListener('load', function() {
+  sendSuccessToBGScript();
+});

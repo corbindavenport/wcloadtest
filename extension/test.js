@@ -261,7 +261,6 @@ function get_active_url(cycle) {
 
 function testListener(request, sender, sendResponse) {
   page = page_timestamps_recorder[sender.tab.id];
-  console.log("page_timestamps_recorder:");
   console.log(JSON.stringify(page_timestamps_recorder));
   if (sender.tab.id in cycle_tabs) {
     cycle = cycle_tabs[sender.tab.id];
@@ -414,10 +413,12 @@ function launch_task(task) {
 }
 
 function page_timestamps_new_record(tab_id, url, start) {
-  // sanitize url, make http(s)://www.abc.com/d/e/f into www.abc.com
-  sanitized_url = url.replace(/https?:\/\//, '').split('/')[0];
+  // Sanitize url, make http(s)://www.abc.com/d/e/f into www.abc.com
+  var tempUrl = new URL(url);
+  cleanUrl = tempUrl.hostname;
+  // Log
   page_timestamps_recorder[tab_id] = {
-    'url': url,
+    'url': cleanUrl,
     'start_time': start,
     'end_load_time': null,
     'end_browse_time': null

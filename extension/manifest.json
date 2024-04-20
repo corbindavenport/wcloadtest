@@ -33,17 +33,6 @@
       ],
       "run_at": "document_end",
       "all_frames": false
-    },
-    {
-      "matches": [
-        "http://*/*",
-        "https://*/*"
-      ],
-      "js": [
-        "prevent_unload_popup.js"
-      ],
-      "run_at": "document_start",
-      "all_frames": true
     }
   ],
   "web_accessible_resources": [
