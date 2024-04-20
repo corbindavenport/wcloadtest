@@ -13,3 +13,7 @@ Re-synced to Google's own testing code 2019-02-19.
 1. Clone the repository or [download the ZIP file](archive/refs/heads/main.zip) and un-zip it anywhere on your device.
 2. Go to `chrome://extensions/` and enable the Developer Mode checkbox.
 3. Click the "Load unpacked" button and select the "extension" folder.
+
+### How to run
+
+Click the extension's toolbar button to start the test. The test will continue until the browser is quit or the extension is turned off from `chrome://extensions/`.

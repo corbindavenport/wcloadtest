@@ -171,13 +171,14 @@ var tasks = [
   },
   {
     // After 54 minutes, watch Big Buck Bunny for 6 minutes
+    // The video is muted because otherwise the autoplay is usually blocked by the browser
     type: 'window',
     name: 'video',
     start: minutes(54),
     duration: minutes(6),
     focus: true,
     tabs: [
-      'https://www.youtube.com/embed/YE7VzlLtp-4?start=236&vq=hd720&autoplay=1'
+      'https://www.youtube.com/embed/YE7VzlLtp-4?start=236&vq=hd720&autoplay=1&mute=1'
     ]
   },
 ]
@@ -426,7 +427,7 @@ function page_timestamps_new_record(tab_id, url, start) {
 }
 
 function record_end_browse_time_for_window(win_id) {
-  chrome.tabs.getAllInWindow(win_id, function (tabs) {
+    tabs.getAllInWindow(win_id, function (tabs) {
     end = Date.now();
     console.log("page_timestamps_recorder:");
     console.log(JSON.stringify(page_timestamps_recorder));
