@@ -185,12 +185,12 @@ var tasks = [
 
 // Set up test
 function setupTest() {
-  // Request display to not turn off during test
-  chrome.power.requestKeepAwake('display');
   // These listeners track request failure codes
   chrome.webRequest.onCompleted.addListener(capture_completed_status,
     { urls: ["<all_urls>"] });
-  chrome.windows.getAll(null, function (windows) {
+  chrome.windows.getAll({
+    populate: true
+  }, function (windows) {
     preexisting_windows = windows;
     for (var i = 0; i < tasks.length; i++) {
       setTimeout(launch_task, tasks[i].start / time_ratio, tasks[i]);
@@ -208,9 +208,12 @@ function setupTest() {
 }
 
 function close_preexisting_windows() {
-  for (var i = 0; i < preexisting_windows.length; i++) {
-    chrome.windows.remove(preexisting_windows[i].id);
-  }
+  preexisting_windows.forEach(function(window) {
+    // Don't close the popup window running this script
+    if (window.type != 'popup') {
+      chrome.windows.remove(window.id);
+    }
+  })
   preexisting_windows.length = 0;
 }
 
@@ -361,24 +364,24 @@ function launch_task(task) {
         close_preexisting_windows();
 
         close_restored_tabs(win, function () {
-          chrome.tabs.getSelected(win.id, function (tab) {
-            for (var i = 1; i < task.tabs.length; i++) {
-              chrome.tabs.create({ 'windowId': win.id, 'url': '/focus.html' });
+          chrome.windows.create({ url: '/focus.html', type: 'normal' }, (win) => {
+            // Create additional tabs as needed
+            for (let i = 1; i < task.tabs.length; i++) {
+              chrome.tabs.create({ windowId: win.id, url: '/focus.html' });
             }
-            chrome.tabs.getAllInWindow(win.id, function (tabs) {
-              for (var i = 0; i < tabs.length; i++) {
-                tab = tabs[i];
-                url = task.tabs[i];
-                start = Date.now();
+            chrome.tabs.query({ windowId: win.id }, (tabs) => {
+              tabs.forEach((tab, index) => {
+                let url = task.tabs[index];
+                let start = Date.now();
                 page_timestamps_new_record(tab.id, url, start);
-                chrome.tabs.update(tab.id, { 'url': url, 'selected': true });
-              }
+                chrome.tabs.update(tab.id, { url: url, highlighted: true });
+              });
               console.log(JSON.stringify(page_timestamps_recorder));
             });
-            setTimeout(function (win_id) {
-              record_end_browse_time_for_window(win_id);
-              chrome.windows.remove(win_id);
-            }, (task.duration / time_ratio), win.id);
+            setTimeout(function () {
+              record_end_browse_time_for_window(win.id);
+              chrome.windows.remove(win.id);
+            }, (task.duration / time_ratio));
           });
         });
       });
@@ -387,7 +390,8 @@ function launch_task(task) {
       { 'url': '/focus.html', state: 'maximized' }, function (win) {
         close_preexisting_windows();
         close_restored_tabs(win, function () {
-          chrome.tabs.getSelected(win.id, function (tab) {
+          chrome.tabs.query({ windowId: win.id }, function(tabs) {
+            var tab = tabs[0];
             var cycle = {
               'timeout': task.timeout,
               'name': task.name,
@@ -459,7 +463,6 @@ function send_status() {
     post.push(name + "_successful_loads=" + cycle.successful_loads);
     post.push(name + "_failed_loads=" + cycle.failed_loads);
   }
-  chrome.power.requestKeepAwake('display');
   chrome.runtime.onMessage.removeListener(testListener);
 }
 
@@ -470,14 +473,14 @@ function startTest() {
 }
 
 function initialize() {
-  // Called when the user clicks on the browser action.
-  chrome.browserAction.onClicked.addListener(function (tab) {
     // Start the test with default settings.
     chrome.runtime.onMessage.addListener(testListener);
     for (var i = 0; i < loop_hours; i++) {
       setTimeout(setupTest, 1000 + (i * 3600000));
     }
-  });
 }
 
-window.addEventListener("load", initialize);
+//window.addEventListener("load", initialize);
+document.getElementById('start-test-btn').addEventListener('click', function() {
+  initialize();
+})
