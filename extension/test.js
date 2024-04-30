@@ -33,15 +33,15 @@ function minutes(m) {
 
 // Returns a formatted string of current time for debugging
 function dateToString(date) {
-	var formatting = {
-		hour: 'numeric',
-		minute: 'numeric',
-		second: 'numeric',
-		hour12: false
-	}
-	var timeString = date.toLocaleTimeString([], formatting);
-	timeString = timeString + ":" + date.getMilliseconds();
-	return timeString
+  var formatting = {
+    hour: 'numeric',
+    minute: 'numeric',
+    second: 'numeric',
+    hour12: false
+  }
+  var timeString = date.toLocaleTimeString([], formatting);
+  timeString = timeString + ":" + date.getMilliseconds();
+  return timeString
 }
 
 // List of URLs for tasks
@@ -208,7 +208,7 @@ function setupTest() {
 }
 
 function close_preexisting_windows() {
-  preexisting_windows.forEach(function(window) {
+  preexisting_windows.forEach(function (window) {
     // Don't close the popup window running this script
     if (window.type != 'popup') {
       chrome.windows.remove(window.id);
@@ -390,7 +390,7 @@ function launch_task(task) {
       { 'url': '/focus.html', state: 'maximized' }, function (win) {
         close_preexisting_windows();
         close_restored_tabs(win, function () {
-          chrome.tabs.query({ windowId: win.id }, function(tabs) {
+          chrome.tabs.query({ windowId: win.id }, function (tabs) {
             var tab = tabs[0];
             var cycle = {
               'timeout': task.timeout,
@@ -431,7 +431,7 @@ function page_timestamps_new_record(tab_id, url, start) {
 }
 
 function record_end_browse_time_for_window(win_id) {
-    tabs.getAllInWindow(win_id, function (tabs) {
+  tabs.getAllInWindow(win_id, function (tabs) {
     end = Date.now();
     console.log("page_timestamps_recorder:");
     console.log(JSON.stringify(page_timestamps_recorder));
@@ -473,14 +473,22 @@ function startTest() {
 }
 
 function initialize() {
-    // Start the test with default settings.
-    chrome.runtime.onMessage.addListener(testListener);
-    for (var i = 0; i < loop_hours; i++) {
-      setTimeout(setupTest, 1000 + (i * 3600000));
-    }
+  // Set status
+  document.getElementById('start-test-btn').innerText = 'Test running...'
+  // Start the test with default settings
+  chrome.runtime.onMessage.addListener(testListener);
+  for (var i = 0; i < loop_hours; i++) {
+    setTimeout(setupTest, 1000 + (i * 3600000));
+  }
 }
 
-//window.addEventListener("load", initialize);
-document.getElementById('start-test-btn').addEventListener('click', function() {
+
+document.getElementById('start-test-btn').addEventListener('click', function () {
   initialize();
+})
+
+document.getElementById('open-memory-settings-link').addEventListener('click', function () {
+  chrome.tabs.create({
+    'url': 'chrome://settings/performance#:~:text=Memory%20Saver'
+  })
 })
