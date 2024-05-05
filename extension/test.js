@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 // Main variables
+const ifEdge = navigator.userAgent.includes('Edg/');
 var test_time_ms = minutes(60);
 var test_startup_delay = seconds(5);
 var should_scroll = true;
@@ -473,8 +474,12 @@ function startTest() {
 }
 
 function initialize() {
-  // Set status
-  document.getElementById('start-test-btn').innerText = 'Test running...'
+  // Set status in UI
+  const testBtn = document.getElementById('start-test-btn');
+  testBtn.innerText = 'Test running...';
+  testBtn.setAttribute('disabled', 'disabled');
+  // Request the screen not turn off
+  chrome.power.requestKeepAwake('display');
   // Start the test with default settings
   chrome.runtime.onMessage.addListener(testListener);
   for (var i = 0; i < loop_hours; i++) {
@@ -487,8 +492,15 @@ document.getElementById('start-test-btn').addEventListener('click', function () 
   initialize();
 })
 
+// Open Memory Saver page in browser
 document.getElementById('open-memory-settings-link').addEventListener('click', function () {
+  var memUrl = '';
+  if (ifEdge) {
+    memUrl = 'edge://settings/system#:~:text=Save%20resources%20with%20sleeping%20tabs';
+  } else {
+    memUrl = 'chrome://settings/performance#:~:text=Memory%20Saver';
+  }
   chrome.tabs.create({
-    'url': 'chrome://settings/performance#:~:text=Memory%20Saver'
+    'url': memUrl
   })
 })
