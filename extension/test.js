@@ -432,6 +432,7 @@ function page_timestamps_new_record(tab_id, url, start) {
 }
 
 function record_end_browse_time_for_window(win_id) {
+  // TODO: Fix Uncaught ReferenceError: tabs is not defined at record_end_browse_time_for_window
   tabs.getAllInWindow(win_id, function (tabs) {
     end = Date.now();
     console.log("page_timestamps_recorder:");

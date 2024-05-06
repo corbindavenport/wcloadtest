@@ -1,7 +1,7 @@
 // Open test window in popup when action button is clicked
 chrome.action.onClicked.addListener(function() {
   chrome.windows.create({
-    url: 'bg.html',
+    url: 'test.html',
     type: 'popup',
     width: 500,
     height: 400,
