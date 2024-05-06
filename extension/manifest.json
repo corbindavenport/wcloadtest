@@ -8,6 +8,14 @@
     "default_icon": "img/wcatter.png",
     "default_title": "Start Power Test"
   },
+  "commands": {
+    "_execute_action": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+T"
+      },
+      "description": "Open WC Power Test"
+    }
+  },
   "minimum_chrome_version": "116",
   "icons": {
     "48": "img/wcatter.png"
