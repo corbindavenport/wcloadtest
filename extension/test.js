@@ -380,7 +380,6 @@ function launch_task(task) {
               console.log(JSON.stringify(page_timestamps_recorder));
             });
             setTimeout(function () {
-              record_end_browse_time_for_window(win.id);
               chrome.windows.remove(win.id);
             }, (task.duration / time_ratio));
           });
@@ -409,7 +408,6 @@ function launch_task(task) {
             cycle_navigate(cycle);
             setTimeout(function (cycle, win_id) {
               clearTimeout(cycle.timer);
-              record_end_browse_time_for_window(win_id);
               chrome.windows.remove(win_id);
             }, task.duration / time_ratio, cycle, win.id);
           });
@@ -429,24 +427,6 @@ function page_timestamps_new_record(tab_id, url, start) {
     'end_load_time': null,
     'end_browse_time': null
   }
-}
-
-function record_end_browse_time_for_window(win_id) {
-  // TODO: Fix Uncaught ReferenceError: tabs is not defined at record_end_browse_time_for_window
-  tabs.getAllInWindow(win_id, function (tabs) {
-    end = Date.now();
-    console.log("page_timestamps_recorder:");
-    console.log(JSON.stringify(page_timestamps_recorder));
-    tabs.forEach(function (tab) {
-      if (tab.id in page_timestamps_recorder) {
-        page = page_timestamps_recorder[tab.id];
-        page['end_browse_time'] = end;
-        page_timestamps.push(page);
-      }
-    });
-    console.log(JSON.stringify("page_timestamps:"));
-    console.log(JSON.stringify(page_timestamps));
-  });
 }
 
 function record_log_entry(entry) {
