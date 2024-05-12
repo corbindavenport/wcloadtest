@@ -365,7 +365,7 @@ function launch_task(task) {
         close_preexisting_windows();
 
         close_restored_tabs(win, function () {
-          chrome.windows.create({ url: '/focus.html', type: 'normal' }, (win) => {
+          chrome.windows.create({ url: '/focus.html', state: 'maximized' }, (win) => {
             // Create additional tabs as needed
             for (let i = 1; i < task.tabs.length; i++) {
               chrome.tabs.create({ windowId: win.id, url: '/focus.html' });
