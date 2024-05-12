@@ -218,47 +218,6 @@ function close_preexisting_windows() {
   preexisting_windows.length = 0;
 }
 
-// This function closes tabs except for the first tab if there are more than 1
-// tab on the window. If there are no window, `chrome.windows.create()`
-// restores the tabs from the previous session. Currently this behaviour is
-// not observed on Ash due to a bug b/269545815.
-function close_restored_tabs(win, callback) {
-  chrome.tabs.query({ windowId: win.id }, (tabs) => {
-    if (chrome.runtime.lastError) {
-      console.error(
-        "close_restored_tabs: chrome.tabs.query resulted in an error: "
-        + chrome.runtime.lastError);
-      // If there is an error, return without calling the callback.
-      return;
-    }
-
-    if (tabs.length < 2) {
-      callback();
-      return;
-    }
-
-    let tabIds = [];
-    for (let i = 1; i < tabs.length; i++) {
-      tabIds.push(tabs[i].id);
-    }
-
-    // Note that the one tab that will remain after other tabs are removed will
-    // be navigated to a url specified by the task so it does not matter what
-    // tab remains. The only important thing here is that there is only one
-    // tab on the window.
-    chrome.tabs.remove(tabIds, () => {
-      if (chrome.runtime.lastError) {
-        console.error(
-          "close_restored_tabs: chrome.tabs.remove resulted in an error: "
-          + chrome.runtime.lastError);
-        return;
-      }
-
-      callback();
-    });
-  })
-}
-
 function get_active_url(cycle) {
   active_idx = cycle.idx == 0 ? cycle.urls.length - 1 : cycle.idx - 1;
   return cycle.urls[active_idx];
@@ -359,58 +318,49 @@ function cycle_check_timeout(cycle) {
 }
 
 function launch_task(task) {
+  close_preexisting_windows();
   if (task.type == 'window' && task.tabs) {
-    chrome.windows.create(
-      { 'url': '/focus.html', state: 'maximized' }, function (win) {
-        close_preexisting_windows();
-
-        close_restored_tabs(win, function () {
-          chrome.windows.create({ url: '/focus.html', state: 'maximized' }, (win) => {
-            // Create additional tabs as needed
-            for (let i = 1; i < task.tabs.length; i++) {
-              chrome.tabs.create({ windowId: win.id, url: '/focus.html' });
-            }
-            chrome.tabs.query({ windowId: win.id }, (tabs) => {
-              tabs.forEach((tab, index) => {
-                let url = task.tabs[index];
-                let start = Date.now();
-                page_timestamps_new_record(tab.id, url, start);
-                chrome.tabs.update(tab.id, { url: url, highlighted: true });
-              });
-              console.log(JSON.stringify(page_timestamps_recorder));
-            });
-            setTimeout(function () {
-              chrome.windows.remove(win.id);
-            }, (task.duration / time_ratio));
-          });
+    chrome.windows.create({ url: '/focus.html', state: 'maximized' }, (win) => {
+      // Create additional tabs as needed
+      for (let i = 1; i < task.tabs.length; i++) {
+        chrome.tabs.create({ windowId: win.id, url: '/focus.html' });
+      }
+      chrome.tabs.query({ windowId: win.id }, (tabs) => {
+        tabs.forEach((tab, index) => {
+          let url = task.tabs[index];
+          let start = Date.now();
+          page_timestamps_new_record(tab.id, url, start);
+          chrome.tabs.update(tab.id, { url: url, highlighted: true });
         });
+        console.log(JSON.stringify(page_timestamps_recorder));
       });
+      setTimeout(function () {
+        chrome.windows.remove(win.id);
+      }, (task.duration / time_ratio));
+    });
   } else if (task.type == 'cycle' && task.urls) {
     chrome.windows.create(
       { 'url': '/focus.html', state: 'maximized' }, function (win) {
-        close_preexisting_windows();
-        close_restored_tabs(win, function () {
-          chrome.tabs.query({ windowId: win.id }, function (tabs) {
-            var tab = tabs[0];
-            var cycle = {
-              'timeout': task.timeout,
-              'name': task.name,
-              'delay': task.delay,
-              'urls': task.urls,
-              'id': tab.id,
-              'idx': 0,
-              'timer': null,
-              'focus': !!task.focus,
-              'successful_loads': 0,
-              'failed_loads': 0
-            };
-            cycles[task.name] = cycle;
-            cycle_navigate(cycle);
-            setTimeout(function (cycle, win_id) {
-              clearTimeout(cycle.timer);
-              chrome.windows.remove(win_id);
-            }, task.duration / time_ratio, cycle, win.id);
-          });
+        chrome.tabs.query({ windowId: win.id }, function (tabs) {
+          var tab = tabs[0];
+          var cycle = {
+            'timeout': task.timeout,
+            'name': task.name,
+            'delay': task.delay,
+            'urls': task.urls,
+            'id': tab.id,
+            'idx': 0,
+            'timer': null,
+            'focus': !!task.focus,
+            'successful_loads': 0,
+            'failed_loads': 0
+          };
+          cycles[task.name] = cycle;
+          cycle_navigate(cycle);
+          setTimeout(function (cycle, win_id) {
+            clearTimeout(cycle.timer);
+            chrome.windows.remove(win_id);
+          }, task.duration / time_ratio, cycle, win.id);
         });
       });
   }
