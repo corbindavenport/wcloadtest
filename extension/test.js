@@ -19,7 +19,7 @@ var log_lines = [];
 var error_codes = {}; //for each active tabId
 var page_timestamps = [];
 var page_timestamps_recorder = {};
-var loop_hours = 20;
+var loop_hours = 30;
 var keys_values = [];
 
 // Convert seconds to milliseconds
