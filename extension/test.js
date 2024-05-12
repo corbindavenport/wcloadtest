@@ -459,6 +459,11 @@ function initialize() {
   const testBtn = document.getElementById('start-test-btn');
   testBtn.innerText = 'Test running...';
   testBtn.setAttribute('disabled', 'disabled');
+  // Prevent accidental window close
+  window.onbeforeunload = function () {
+    // Warn before navigating away if there are any files imported
+    return 'Are you sure you want to navigate away?'
+  }
   // Request the screen not turn off
   chrome.power.requestKeepAwake('display');
   // Start the test with default settings

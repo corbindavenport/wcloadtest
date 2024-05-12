@@ -16,6 +16,6 @@ Re-synced to Google's own testing code 2019-02-19.
 
 ### How to run
 
-Click the extension's toolbar button or press Ctrl+Shift+T (Cmd+Shift+T on Mac) to start the test. The test will continue until the browser is quit or the extension is turned off from `chrome://extensions`.
+Click the extension's toolbar button or press Ctrl+Shift+O (Cmd+Shift+O on Mac) to start the test. The test will continue until the browser is quit or the extension is turned off from `chrome://extensions`.
 
 **Note:** Memory Saver should be turned off in your browser, or the window with the test could be put to sleep and stop the test. You can click the 'Open Memory saver settings' link in the test window to jump to the settings.
