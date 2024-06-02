@@ -30,7 +30,7 @@
     "http://*/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "js/background.js"
   },
   "content_scripts": [
     {
@@ -39,7 +39,7 @@
         "https://*/*"
       ],
       "js": [
-        "ct.js"
+        "js/ct.js"
       ],
       "run_at": "document_end",
       "all_frames": false
@@ -48,7 +48,7 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "custom_event_listener.js"
+        "js/custom_event_listener.js"
       ],
       "matches": [
         "http://*/*",
