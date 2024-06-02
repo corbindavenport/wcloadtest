@@ -19,7 +19,6 @@ var log_lines = [];
 var error_codes = {}; //for each active tabId
 var page_timestamps = [];
 var page_timestamps_recorder = {};
-var loop_hours = 40;
 var keys_values = [];
 
 // Convert seconds to milliseconds
@@ -414,9 +413,10 @@ function initialize() {
     // Warn before navigating away if there are any files imported
     return 'Are you sure you want to navigate away?'
   }
-  // Request the screen not turn off
+  // Initialize settings
+  var loop_hours = Number(document.getElementById('test-length').value);
   chrome.power.requestKeepAwake('display');
-  // Start the test with default settings
+  // Start test
   chrome.runtime.onMessage.addListener(testListener);
   for (var i = 0; i < loop_hours; i++) {
     setTimeout(setupTest, 1000 + (i * 3600000));

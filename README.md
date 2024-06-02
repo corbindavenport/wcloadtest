@@ -1,6 +1,6 @@
 # WCLoadTest
 
-WCLoadTest is a browser extension to simulate typical browsing behavior for testing laptop battery life, based on Google's [Chromium power_LoadTest tool](http://www.chromium.org/chromium-os/testing/power-testing). The test runs for a default of 40 hours, which can be changed with the `loop_hours` variable in **test.js**.
+WCLoadTest is a browser extension to simulate typical browsing behavior for testing laptop battery life, based on Google's [Chromium power_LoadTest tool](http://www.chromium.org/chromium-os/testing/power-testing). The test runs for a default of 40 hours, which can be changed with the `loop_hours` variable in **test.js**. It also uses the [Bootstrap](https://getbootstrap.com/) framework.
 
 ### How to install
 
