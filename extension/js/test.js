@@ -49,7 +49,7 @@ var ViewGDoc = ('https://docs.google.com/document/d/');
 var RADIO_AUDIO_URL = 'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/long_rain.mp3'
 
 // List of popular websites for simulated web browsing
-var sitesArray = [
+const defaultSitesArray = [
   'https://www.google.com/search?q=google',
   'https://www.youtube.com',
   'https://www.facebook.com/facebook',
@@ -127,7 +127,7 @@ var tasks = [
     delay: seconds(60), // A minute on each page
     timeout: seconds(30),
     focus: true,
-    urls: sitesArray,
+    urls: [], // This is replaced when the Start test button is clicked
   },
   {
     // After 36 minutes, actively read e-mail for 12 minutes
@@ -414,6 +414,7 @@ function initialize() {
     return 'Are you sure you want to navigate away?'
   }
   // Initialize settings
+  tasks.find(task => task.name === "web").urls = document.querySelector('#test-sites-list').value.split('\n');
   var loop_hours = Number(document.getElementById('test-length').value);
   chrome.power.requestKeepAwake('display');
   // Start test
@@ -423,7 +424,10 @@ function initialize() {
   }
 }
 
+// Initialize toast UI
+const toastSaved = bootstrap.Toast.getOrCreateInstance(document.querySelector('#saved-toast'))
 
+// Start test button
 document.getElementById('start-test-btn').addEventListener('click', function () {
   initialize();
 })
@@ -438,5 +442,40 @@ document.getElementById('open-memory-settings-link').addEventListener('click', f
   }
   chrome.tabs.create({
     'url': memUrl
+  })
+})
+
+// Read settings from storage
+chrome.storage.sync.get({
+  testLength: 40,
+  sitesList: defaultSitesArray
+}, function (data) {
+  // Test length
+  document.querySelector('#test-length').value = data.testLength;
+  // Sites list
+  document.querySelector('#test-sites-list').value = data.sitesList.join('\n');
+});
+
+// Reset sites button
+document.querySelector('#test-sites-reset-btn').addEventListener('click', function() {
+  document.querySelector('#test-sites-list').value = defaultSitesArray.join('\n');
+  chrome.storage.sync.set({
+    sitesList: defaultSitesArray
+  }, function() {
+    toastSaved.show();
+  })
+})
+
+// Save settings after any input change
+document.querySelectorAll('input,select,textarea').forEach(function (el) {
+  el.addEventListener('change', function () {
+    chrome.storage.sync.set({
+      // Test length
+      testLength: parseInt(document.querySelector('#test-length').value),
+      // Sites list
+      sitesList: document.querySelector('#test-sites-list').value.split('\n')
+    }, function() {
+      toastSaved.show();
+    })
   })
 })

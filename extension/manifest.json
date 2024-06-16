@@ -23,7 +23,8 @@
   "permissions": [
     "webRequest",
     "tabs",
-    "power"
+    "power",
+    "storage"
   ],
   "host_permissions":[
     "https://*/*",
