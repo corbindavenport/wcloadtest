@@ -202,7 +202,16 @@ function setupTest() {
     keys_values = [];
     record_log_entry(dateToString(new Date()) + " Loop started");
     setTimeout(function () {
+      // Test is complete
       console.log('Loop ended.')
+      // Reset UI
+      var testBtn = document.getElementById('start-test-btn');
+      testBtn.innerText = 'Start test';
+      testBtn.removeAttribute('disabled');
+      // Stop timer
+      clearInterval(timerInterval);
+      // Allow screen to go to sleep again
+      chrome.power.releaseKeepAwake();
     }, end);
   });
 }
@@ -397,6 +406,48 @@ function send_status() {
   chrome.runtime.onMessage.removeListener(testListener);
 }
 
+// Function to get the difference between two times
+function getTimeDifference(date1, date2) {
+  // Calculate the difference in milliseconds
+  var difference = date2 - date1;
+  // Convert milliseconds to hours and minutes
+  var hours = Math.floor(difference / 3600000); // 1 hour = 3600000 milliseconds
+  var minutes = Math.floor((difference % 3600000) / 60000); // 1 minute = 60000 milliseconds
+  // Format the output
+  var hoursMinutes = `${hours}:${minutes < 10 ? '0' + minutes : minutes}`;
+  var hoursDotMinutes = `${hours}.${minutes < 10 ? '0' + minutes : minutes}`;
+  return { hoursMinutes, hoursDotMinutes };
+}
+
+// Function for starting or continuing test timer, and storing and displaying the result
+// This uses chrome.storage instead of local variables so the data isn't lost if the battery dies
+async function updateTimer(resetTime = false, updateTime = false) {
+  // Reset timer if needed
+  if (resetTime) {
+    await chrome.storage.local.set({
+      startTime: Date().toString()
+    })
+  }
+  // Set current time if needed
+  if (updateTime) {
+    await chrome.storage.local.set({
+      lastUpdatedTime: Date().toString()
+    })
+  }
+  // Retrieve full time data
+  const data = await chrome.storage.local.get({
+    startTime: null,
+    lastUpdatedTime: null
+  })
+  // Calculate and display time data
+  const startTime = new Date(data.startTime);
+  const lastUpdatedTime = new Date(data.lastUpdatedTime);
+  const { hoursMinutes, hoursDotMinutes } = getTimeDifference(startTime, lastUpdatedTime);
+  const testResults = 'Start time: ' + startTime.toUTCString() + '\nEnd time: ' + lastUpdatedTime.toUTCString() + '\nDuration: ' + hoursMinutes + ' / ' + hoursDotMinutes;
+  document.querySelector('#test-results').value = testResults;
+  console.log('Updated timer');
+}
+
 function startTest() {
   time_ratio = 3600 * 1000 / test_time_ms; // default test time is 1 hour
   chrome.runtime.onMessage.addListener(testListener);
@@ -405,7 +456,7 @@ function startTest() {
 
 function initialize() {
   // Set status in UI
-  const testBtn = document.getElementById('start-test-btn');
+  var testBtn = document.getElementById('start-test-btn');
   testBtn.innerText = 'Test running...';
   testBtn.setAttribute('disabled', 'disabled');
   // Prevent accidental window close
@@ -417,6 +468,11 @@ function initialize() {
   tasks.find(task => task.name === "web").urls = document.querySelector('#test-sites-list').value.split('\n');
   var loop_hours = Number(document.getElementById('test-length').value);
   chrome.power.requestKeepAwake('display');
+  // Start timer
+  updateTimer(true, true);
+  var timerInterval = setInterval(function () {
+    updateTimer(false, true);
+  }, 60000);
   // Start test
   chrome.runtime.onMessage.addListener(testListener);
   for (var i = 0; i < loop_hours; i++) {
@@ -430,6 +486,19 @@ const toastSaved = bootstrap.Toast.getOrCreateInstance(document.querySelector('#
 // Start test button
 document.getElementById('start-test-btn').addEventListener('click', function () {
   initialize();
+})
+
+// Share test button
+document.getElementById('test-share-btn').addEventListener('click', function () {
+  const shareData = {
+    title: "WC Power Test",
+    text: document.querySelector('#test-results').value
+  };
+  try {
+    navigator.share(shareData);
+  } catch {
+    alert('Share is not supported.');
+  }
 })
 
 // Open Memory Saver page in browser
@@ -446,7 +515,7 @@ document.getElementById('open-memory-settings-link').addEventListener('click', f
 })
 
 // Read settings from storage
-chrome.storage.sync.get({
+chrome.storage.local.get({
   testLength: 40,
   sitesList: defaultSitesArray
 }, function (data) {
@@ -456,12 +525,15 @@ chrome.storage.sync.get({
   document.querySelector('#test-sites-list').value = data.sitesList.join('\n');
 });
 
+// Read test from storage
+updateTimer(false, false);
+
 // Reset sites button
-document.querySelector('#test-sites-reset-btn').addEventListener('click', function() {
+document.querySelector('#test-sites-reset-btn').addEventListener('click', function () {
   document.querySelector('#test-sites-list').value = defaultSitesArray.join('\n');
-  chrome.storage.sync.set({
+  chrome.storage.local.set({
     sitesList: defaultSitesArray
-  }, function() {
+  }, function () {
     toastSaved.show();
   })
 })
@@ -469,12 +541,12 @@ document.querySelector('#test-sites-reset-btn').addEventListener('click', functi
 // Save settings after any input change
 document.querySelectorAll('input,select,textarea').forEach(function (el) {
   el.addEventListener('change', function () {
-    chrome.storage.sync.set({
+    chrome.storage.local.set({
       // Test length
       testLength: parseInt(document.querySelector('#test-length').value),
       // Sites list
       sitesList: document.querySelector('#test-sites-list').value.split('\n')
-    }, function() {
+    }, function () {
       toastSaved.show();
     })
   })

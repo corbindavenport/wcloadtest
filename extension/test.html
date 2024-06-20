@@ -21,19 +21,33 @@
 
     <div class="container-fluid pt-3">
 
-        <div class="alert alert-warning" role="alert">
+        <!-- Test results with share button -->
+        <div class="input-group mb-3">
+            <textarea class="form-control" id="test-results" rows="3" spellcheck="false" placeholder="Test results will appear here." disabled style="resize: none;"></textarea>
+            <button class="btn btn-secondary" type="button" id="test-share-btn" aria-label="Share button">
+                <!-- Share button: https://icons.getbootstrap.com/icons/share-fill/ -->
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-share-fill" viewBox="0 0 16 16">
+                    <path d="M11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.5 2.5 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- Memory saver alert -->
+        <div class="text-muted text-center mb-3">
             Memory Saver (Sleeping Tabs) should be turned off in your <a href="#" id="open-memory-settings-link">browser settings</a> to prevent the test from automatically stopping.
         </div>
 
+        <!-- Test length setting -->
         <div class="mb-3">
             <label for="inputPassword" class="col-sm-4 col-form-label">Test length (in hours)</label>
-            <input type="number" class="form-control" id="test-length" placeholder="Default: 40">
+            <input type="number" class="form-control" id="test-length" placeholder="40">
         </div>
 
+        <!-- Test sites list -->
         <div class="mb-3">
             <label for="test-sites-list" class="form-label">Test sites</label>
             <textarea class="form-control" id="test-sites-list" rows="5" spellcheck="false" placeholder="https://google.com"></textarea>
-            <button type="button" class="btn btn-primary btn-sm mt-2 w-100" id="test-sites-reset-btn">Reset site list to default</button>
+            <button type="button" class="btn btn-secondary btn-sm mt-2 w-100" id="test-sites-reset-btn">Reset site list to default</button>
         </div>
 
     </div>
@@ -45,7 +59,7 @@
             </div>
         </div>
     </div>
-    
+
 
     <script src="js/bootstrap.bundle.min.js"></script>
     <script src='js/test.js'></script>
