@@ -20,6 +20,7 @@ var error_codes = {}; //for each active tabId
 var page_timestamps = [];
 var page_timestamps_recorder = {};
 var keys_values = [];
+var timerInterval = null; // This needs to be defined globally
 
 // Convert seconds to milliseconds
 function seconds(s) {
@@ -470,7 +471,7 @@ function initialize() {
   chrome.power.requestKeepAwake('display');
   // Start timer
   updateTimer(true, true);
-  var timerInterval = setInterval(function () {
+  timerInterval = setInterval(function () {
     updateTimer(false, true);
   }, 60000);
   // Start test
