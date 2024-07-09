@@ -186,6 +186,8 @@ var tasks = [
 
 // Set up test
 function setupTest() {
+  // Prevent screen from going to sleep
+  chrome.power.requestKeepAwake('display');
   // These listeners track request failure codes
   chrome.webRequest.onCompleted.addListener(capture_completed_status,
     { urls: ["<all_urls>"] });
@@ -414,11 +416,14 @@ function getTimeDifference(date1, date2) {
   // Convert milliseconds to hours and minutes
   var hours = Math.floor(difference / 3600000); // 1 hour = 3600000 milliseconds
   var minutes = Math.floor((difference % 3600000) / 60000); // 1 minute = 60000 milliseconds
+  // Convert minutes to a fraction of an hour
+  var decimalHours = hours + (minutes / 60);
   // Format the output
   var hoursMinutes = `${hours}:${minutes < 10 ? '0' + minutes : minutes}`;
-  var hoursDotMinutes = `${hours}.${minutes < 10 ? '0' + minutes : minutes}`;
+  var hoursDotMinutes = decimalHours.toFixed(2); // Keep two decimal places
   return { hoursMinutes, hoursDotMinutes };
 }
+
 
 // Function for starting or continuing test timer, and storing and displaying the result
 // This uses chrome.storage instead of local variables so the data isn't lost if the battery dies
@@ -441,10 +446,13 @@ async function updateTimer(resetTime = false, updateTime = false) {
     lastUpdatedTime: null
   })
   // Calculate and display time data
+  const currentTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const startTime = new Date(data.startTime);
   const lastUpdatedTime = new Date(data.lastUpdatedTime);
   const { hoursMinutes, hoursDotMinutes } = getTimeDifference(startTime, lastUpdatedTime);
-  const testResults = 'Start time: ' + startTime.toUTCString() + '\nEnd time: ' + lastUpdatedTime.toUTCString() + '\nDuration: ' + hoursMinutes + ' / ' + hoursDotMinutes;
+  const testResults = `Start time: ${startTime.toLocaleString('en-US', { timeZone: currentTimeZone })} (${currentTimeZone})
+End time: ${lastUpdatedTime.toLocaleString('en-US', { timeZone: currentTimeZone })} (${currentTimeZone})
+Duration: ${hoursMinutes} / ${hoursDotMinutes}`;
   document.querySelector('#test-results').value = testResults;
   console.log('Updated timer');
 }
@@ -468,7 +476,6 @@ function initialize() {
   // Initialize settings
   tasks.find(task => task.name === "web").urls = document.querySelector('#test-sites-list').value.split('\n');
   var loop_hours = Number(document.getElementById('test-length').value);
-  chrome.power.requestKeepAwake('display');
   // Start timer
   updateTimer(true, true);
   timerInterval = setInterval(function () {
