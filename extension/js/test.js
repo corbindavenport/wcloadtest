@@ -184,41 +184,6 @@ var tasks = [
   },
 ]
 
-// Set up test
-function setupTest() {
-  // Prevent screen from going to sleep
-  chrome.power.requestKeepAwake('display');
-  // These listeners track request failure codes
-  chrome.webRequest.onCompleted.addListener(capture_completed_status,
-    { urls: ["<all_urls>"] });
-  chrome.windows.getAll({
-    populate: true
-  }, function (windows) {
-    preexisting_windows = windows;
-    for (var i = 0; i < tasks.length; i++) {
-      setTimeout(launch_task, tasks[i].start / time_ratio, tasks[i]);
-    }
-    var end = 3600 * 1000 / time_ratio;
-    log_lines = [];
-    page_timestamps = [];
-    page_timestamps_recorder = {};
-    keys_values = [];
-    record_log_entry(dateToString(new Date()) + " Loop started");
-    setTimeout(function () {
-      // Test is complete
-      console.log('Loop ended.')
-      // Reset UI
-      var testBtn = document.getElementById('start-test-btn');
-      testBtn.innerText = 'Start test';
-      testBtn.removeAttribute('disabled');
-      // Stop timer
-      clearInterval(timerInterval);
-      // Allow screen to go to sleep again
-      chrome.power.releaseKeepAwake();
-    }, end);
-  });
-}
-
 function close_preexisting_windows() {
   preexisting_windows.forEach(function (window) {
     // Don't close the popup window running this script
@@ -457,43 +422,82 @@ Duration: ${hoursMinutes} / ${hoursDotMinutes}`;
   console.log('Updated timer');
 }
 
-function startTest() {
-  time_ratio = 3600 * 1000 / test_time_ms; // default test time is 1 hour
-  chrome.runtime.onMessage.addListener(testListener);
-  setTimeout(setupTest, 1000);
-}
-
-function initialize() {
+function setupTest() {
   // Set status in UI
   var testBtn = document.getElementById('start-test-btn');
   testBtn.innerText = 'Test running...';
   testBtn.setAttribute('disabled', 'disabled');
+
   // Prevent accidental window close
   window.onbeforeunload = function () {
-    // Warn before navigating away if there are any files imported
-    return 'Are you sure you want to navigate away?'
-  }
+    return 'Are you sure you want to navigate away?';
+  };
+
   // Initialize settings
-  tasks.find(task => task.name === "web").urls = document.querySelector('#test-sites-list').value.split('\n');
+  var testUrlList = document.querySelector('#test-sites-list').value.split('\n');
+  tasks.find(function (task) { return task.name === "web"; }).urls = testUrlList;
   var loop_hours = Number(document.getElementById('test-length').value);
+
   // Start timer
   updateTimer(true, true);
   timerInterval = setInterval(function () {
     updateTimer(false, true);
   }, 60000);
+
   // Start test
   chrome.runtime.onMessage.addListener(testListener);
+  var completedLoops = 0;
   for (var i = 0; i < loop_hours; i++) {
-    setTimeout(setupTest, 1000 + (i * 3600000));
+    setTimeout(function () {
+      // Prevent screen from going to sleep
+      chrome.power.requestKeepAwake('display');
+
+      // These listeners track request failure codes
+      chrome.webRequest.onCompleted.addListener(capture_completed_status, { urls: ["<all_urls>"] });
+
+      chrome.windows.getAll({ populate: true }, function (windows) {
+        preexisting_windows = windows;
+        tasks.forEach(function (task) {
+          setTimeout(launch_task, task.start / time_ratio, task);
+        });
+
+        var end = 3600 * 1000 / time_ratio;
+        log_lines = [];
+        page_timestamps = [];
+        page_timestamps_recorder = {};
+        keys_values = [];
+        record_log_entry(dateToString(new Date()) + " Loop started");
+
+        setTimeout(function () {
+          // Increment completed loops
+          completedLoops++;
+          if (completedLoops === loop_hours) {
+            console.log('Loop ended.');
+
+            // Reset UI
+            var testBtn = document.getElementById('start-test-btn');
+            testBtn.innerText = 'Start test';
+            testBtn.removeAttribute('disabled');
+
+            // Stop timer
+            clearInterval(timerInterval);
+
+            // Allow screen to go to sleep again
+            chrome.power.releaseKeepAwake();
+          }
+        }, end);
+      });
+    }, 1000 + (i * 3600000));
   }
 }
+
 
 // Initialize toast UI
 const toastSaved = bootstrap.Toast.getOrCreateInstance(document.querySelector('#saved-toast'))
 
 // Start test button
 document.getElementById('start-test-btn').addEventListener('click', function () {
-  initialize();
+  setupTest();
 })
 
 // Share test button
