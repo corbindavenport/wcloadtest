@@ -21,6 +21,10 @@ var page_timestamps = [];
 var page_timestamps_recorder = {};
 var keys_values = [];
 var timerInterval = null; // This needs to be defined globally
+const startTestBtn = document.getElementById('start-test-btn');
+const testLengthEl = document.querySelector('#test-length');
+const testSitesEl = document.querySelector('#test-sites-list');
+const sitesResetBtn = document.querySelector('#test-sites-reset-btn');
 
 // Convert seconds to milliseconds
 function seconds(s) {
@@ -424,9 +428,10 @@ Duration: ${hoursMinutes} / ${hoursDotMinutes}`;
 
 function setupTest() {
   // Set status in UI
-  var testBtn = document.getElementById('start-test-btn');
-  testBtn.innerText = 'Test running...';
-  testBtn.setAttribute('disabled', 'disabled');
+  startTestBtn.innerText = 'Test running...';
+  startTestBtn.setAttribute('disabled', 'disabled');
+  testLengthEl.setAttribute('disabled', 'disabled');
+  testSitesEl.setAttribute('disabled', 'disabled');
 
   // Prevent accidental window close
   window.onbeforeunload = function () {
@@ -434,7 +439,7 @@ function setupTest() {
   };
 
   // Initialize settings
-  var testUrlList = document.querySelector('#test-sites-list').value.split('\n');
+  var testUrlList = testSitesEl.value.split('\n');
   tasks.find(function (task) { return task.name === "web"; }).urls = testUrlList;
   var loop_hours = Number(document.getElementById('test-length').value);
 
@@ -451,37 +456,31 @@ function setupTest() {
     setTimeout(function () {
       // Prevent screen from going to sleep
       chrome.power.requestKeepAwake('display');
-
       // These listeners track request failure codes
       chrome.webRequest.onCompleted.addListener(capture_completed_status, { urls: ["<all_urls>"] });
-
       chrome.windows.getAll({ populate: true }, function (windows) {
         preexisting_windows = windows;
         tasks.forEach(function (task) {
           setTimeout(launch_task, task.start / time_ratio, task);
         });
-
         var end = 3600 * 1000 / time_ratio;
         log_lines = [];
         page_timestamps = [];
         page_timestamps_recorder = {};
         keys_values = [];
         record_log_entry(dateToString(new Date()) + " Loop started");
-
         setTimeout(function () {
           // Increment completed loops
           completedLoops++;
           if (completedLoops === loop_hours) {
             console.log('Loop ended.');
-
             // Reset UI
-            var testBtn = document.getElementById('start-test-btn');
-            testBtn.innerText = 'Start test';
-            testBtn.removeAttribute('disabled');
-
+            startTestBtn.innerText = 'Start test';
+            startTestBtn.removeAttribute('disabled');
+            testLengthEl.removeAttribute('disabled');
+            testSitesEl.removeAttribute('disabled');
             // Stop timer
             clearInterval(timerInterval);
-
             // Allow screen to go to sleep again
             chrome.power.releaseKeepAwake();
           }
@@ -496,7 +495,7 @@ function setupTest() {
 const toastSaved = bootstrap.Toast.getOrCreateInstance(document.querySelector('#saved-toast'))
 
 // Start test button
-document.getElementById('start-test-btn').addEventListener('click', function () {
+startTestBtn.addEventListener('click', function () {
   setupTest();
 })
 
@@ -532,17 +531,17 @@ chrome.storage.local.get({
   sitesList: defaultSitesArray
 }, function (data) {
   // Test length
-  document.querySelector('#test-length').value = data.testLength;
+  testLengthEl.value = data.testLength;
   // Sites list
-  document.querySelector('#test-sites-list').value = data.sitesList.join('\n');
+  testSitesEl.value = data.sitesList.join('\n');
 });
 
 // Read test from storage
 updateTimer(false, false);
 
 // Reset sites button
-document.querySelector('#test-sites-reset-btn').addEventListener('click', function () {
-  document.querySelector('#test-sites-list').value = defaultSitesArray.join('\n');
+sitesResetBtn.addEventListener('click', function () {
+  testSitesEl.value = defaultSitesArray.join('\n');
   chrome.storage.local.set({
     sitesList: defaultSitesArray
   }, function () {
@@ -555,9 +554,9 @@ document.querySelectorAll('input,select,textarea').forEach(function (el) {
   el.addEventListener('change', function () {
     chrome.storage.local.set({
       // Test length
-      testLength: parseInt(document.querySelector('#test-length').value),
+      testLength: parseInt(testLengthEl.value),
       // Sites list
-      sitesList: document.querySelector('#test-sites-list').value.split('\n')
+      sitesList: testSitesEl.value.split('\n')
     }, function () {
       toastSaved.show();
     })
