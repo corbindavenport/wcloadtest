@@ -499,17 +499,12 @@ startTestBtn.addEventListener('click', function () {
   setupTest();
 })
 
-// Share test button
-document.getElementById('test-share-btn').addEventListener('click', function () {
-  const shareData = {
-    title: "WC Power Test",
-    text: document.querySelector('#test-results').value
-  };
-  try {
-    navigator.share(shareData);
-  } catch {
-    alert('Share is not supported.');
-  }
+// Copy test button
+document.getElementById('test-copy-btn').addEventListener('click', async function () {
+  const type = "text/plain";
+  const blob = new Blob([document.querySelector('#test-results').value], { type });
+  const data = [new ClipboardItem({ [type]: blob })];
+  await navigator.clipboard.write(data);
 })
 
 // Open Memory Saver page in browser

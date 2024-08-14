@@ -12,4 +12,6 @@ WCLoadTest is a browser extension to simulate typical browsing behavior for test
 
 Click the extension's toolbar button to open the test window, then click the button to start. The test will continue until the window is closed or the loop is completed.
 
+When running on a Windows machine, make sure "Automatically save my restartable apps and restart them when I sign back in" is turned off in the Windows settings, and [turn off hibernation](https://learn.microsoft.com/en-us/troubleshoot/windows-client/setup-upgrade-and-drivers/disable-and-re-enable-hibernation).
+
 Memory Saver should be turned off in your browser, or the window with the test could be put to sleep and stop the test. You can click the 'Open Memory saver settings' link in the test window to jump to the settings. You should also log into Facebook and Gmail before running the test.
