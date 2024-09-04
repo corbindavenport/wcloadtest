@@ -3,7 +3,7 @@
   "name": "WC Power Test",
   "description": "Customized version of Google's Chromium power_LoadTest extension.",
   "homepage_url": "https://github.com/corbindavenport/wcloadtest",
-  "version": "1.0",
+  "version": "1.1",
   "action": {
     "default_icon": "img/wcatter.png",
     "default_title": "Start Power Test"
