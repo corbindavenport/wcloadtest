@@ -3,18 +3,10 @@
   "name": "WC Power Test",
   "description": "Customized version of Google's Chromium power_LoadTest extension.",
   "homepage_url": "https://github.com/corbindavenport/wcloadtest",
-  "version": "1.0",
+  "version": "1.1",
   "action": {
     "default_icon": "img/wcatter.png",
     "default_title": "Start Power Test"
-  },
-  "commands": {
-    "_execute_action": {
-      "suggested_key": {
-        "default": "Ctrl+Shift+O"
-      },
-      "description": "Open WC Power Test"
-    }
   },
   "minimum_chrome_version": "116",
   "icons": {
@@ -23,14 +15,15 @@
   "permissions": [
     "webRequest",
     "tabs",
-    "power"
+    "power",
+    "storage"
   ],
   "host_permissions":[
     "https://*/*",
     "http://*/*"
   ],
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "js/background.js"
   },
   "content_scripts": [
     {
@@ -39,7 +32,7 @@
         "https://*/*"
       ],
       "js": [
-        "ct.js"
+        "js/ct.js"
       ],
       "run_at": "document_end",
       "all_frames": false
@@ -48,7 +41,7 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "custom_event_listener.js"
+        "js/custom_event_listener.js"
       ],
       "matches": [
         "http://*/*",

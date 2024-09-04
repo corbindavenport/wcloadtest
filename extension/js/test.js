@@ -19,8 +19,12 @@ var log_lines = [];
 var error_codes = {}; //for each active tabId
 var page_timestamps = [];
 var page_timestamps_recorder = {};
-var loop_hours = 40;
 var keys_values = [];
+var timerInterval = null; // This needs to be defined globally
+const startTestBtn = document.getElementById('start-test-btn');
+const testLengthEl = document.querySelector('#test-length');
+const testSitesEl = document.querySelector('#test-sites-list');
+const sitesResetBtn = document.querySelector('#test-sites-reset-btn');
 
 // Convert seconds to milliseconds
 function seconds(s) {
@@ -50,7 +54,7 @@ var ViewGDoc = ('https://docs.google.com/document/d/');
 var RADIO_AUDIO_URL = 'https://storage.googleapis.com/chromiumos-test-assets-public/power_LoadTest/long_rain.mp3'
 
 // List of popular websites for simulated web browsing
-var sitesArray = [
+const defaultSitesArray = [
   'https://www.google.com/search?q=google',
   'https://www.youtube.com',
   'https://www.facebook.com/facebook',
@@ -128,7 +132,7 @@ var tasks = [
     delay: seconds(60), // A minute on each page
     timeout: seconds(30),
     focus: true,
-    urls: sitesArray,
+    urls: [], // This is replaced when the Start test button is clicked
   },
   {
     // After 36 minutes, actively read e-mail for 12 minutes
@@ -183,30 +187,6 @@ var tasks = [
     ]
   },
 ]
-
-// Set up test
-function setupTest() {
-  // These listeners track request failure codes
-  chrome.webRequest.onCompleted.addListener(capture_completed_status,
-    { urls: ["<all_urls>"] });
-  chrome.windows.getAll({
-    populate: true
-  }, function (windows) {
-    preexisting_windows = windows;
-    for (var i = 0; i < tasks.length; i++) {
-      setTimeout(launch_task, tasks[i].start / time_ratio, tasks[i]);
-    }
-    var end = 3600 * 1000 / time_ratio;
-    log_lines = [];
-    page_timestamps = [];
-    page_timestamps_recorder = {};
-    keys_values = [];
-    record_log_entry(dateToString(new Date()) + " Loop started");
-    setTimeout(function () {
-      console.log('Loop ended.')
-    }, end);
-  });
-}
 
 function close_preexisting_windows() {
   preexisting_windows.forEach(function (window) {
@@ -398,34 +378,133 @@ function send_status() {
   chrome.runtime.onMessage.removeListener(testListener);
 }
 
-function startTest() {
-  time_ratio = 3600 * 1000 / test_time_ms; // default test time is 1 hour
-  chrome.runtime.onMessage.addListener(testListener);
-  setTimeout(setupTest, 1000);
+// Function to get the difference between two times
+function getTimeDifference(date1, date2) {
+  // Calculate the difference in milliseconds
+  var difference = date2 - date1;
+  // Convert milliseconds to hours and minutes
+  var hours = Math.floor(difference / 3600000); // 1 hour = 3600000 milliseconds
+  var minutes = Math.floor((difference % 3600000) / 60000); // 1 minute = 60000 milliseconds
+  // Convert minutes to a fraction of an hour
+  var decimalHours = hours + (minutes / 60);
+  // Format the output
+  var hoursMinutes = `${hours}:${minutes < 10 ? '0' + minutes : minutes}`;
+  var hoursDotMinutes = decimalHours.toFixed(2); // Keep two decimal places
+  return { hoursMinutes, hoursDotMinutes };
 }
 
-function initialize() {
+
+// Function for starting or continuing test timer, and storing and displaying the result
+// This uses chrome.storage instead of local variables so the data isn't lost if the battery dies
+async function updateTimer(resetTime = false, updateTime = false) {
+  // Reset timer if needed
+  if (resetTime) {
+    await chrome.storage.local.set({
+      startTime: Date().toString()
+    })
+  }
+  // Set current time if needed
+  if (updateTime) {
+    await chrome.storage.local.set({
+      lastUpdatedTime: Date().toString()
+    })
+  }
+  // Retrieve full time data
+  const data = await chrome.storage.local.get({
+    startTime: null,
+    lastUpdatedTime: null
+  })
+  // Calculate and display time data
+  const currentTimeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const startTime = new Date(data.startTime);
+  const lastUpdatedTime = new Date(data.lastUpdatedTime);
+  const { hoursMinutes, hoursDotMinutes } = getTimeDifference(startTime, lastUpdatedTime);
+  const testResults = `Start time: ${startTime.toLocaleString('en-US', { timeZone: currentTimeZone })} (${currentTimeZone})
+End time: ${lastUpdatedTime.toLocaleString('en-US', { timeZone: currentTimeZone })} (${currentTimeZone})
+Duration: ${hoursMinutes} / ${hoursDotMinutes}`;
+  document.querySelector('#test-results').value = testResults;
+  console.log('Updated timer');
+}
+
+function setupTest() {
   // Set status in UI
-  const testBtn = document.getElementById('start-test-btn');
-  testBtn.innerText = 'Test running...';
-  testBtn.setAttribute('disabled', 'disabled');
+  startTestBtn.innerText = 'Test running...';
+  startTestBtn.setAttribute('disabled', 'disabled');
+  testLengthEl.setAttribute('disabled', 'disabled');
+  testSitesEl.setAttribute('disabled', 'disabled');
+
   // Prevent accidental window close
   window.onbeforeunload = function () {
-    // Warn before navigating away if there are any files imported
-    return 'Are you sure you want to navigate away?'
-  }
-  // Request the screen not turn off
-  chrome.power.requestKeepAwake('display');
-  // Start the test with default settings
+    return 'Are you sure you want to navigate away?';
+  };
+
+  // Initialize settings
+  var testUrlList = testSitesEl.value.split('\n');
+  tasks.find(function (task) { return task.name === "web"; }).urls = testUrlList;
+  var loop_hours = Number(document.getElementById('test-length').value);
+
+  // Start timer
+  updateTimer(true, true);
+  timerInterval = setInterval(function () {
+    updateTimer(false, true);
+  }, 60000);
+
+  // Start test
   chrome.runtime.onMessage.addListener(testListener);
+  var completedLoops = 0;
   for (var i = 0; i < loop_hours; i++) {
-    setTimeout(setupTest, 1000 + (i * 3600000));
+    setTimeout(function () {
+      // Prevent screen from going to sleep
+      chrome.power.requestKeepAwake('display');
+      // These listeners track request failure codes
+      chrome.webRequest.onCompleted.addListener(capture_completed_status, { urls: ["<all_urls>"] });
+      chrome.windows.getAll({ populate: true }, function (windows) {
+        preexisting_windows = windows;
+        tasks.forEach(function (task) {
+          setTimeout(launch_task, task.start / time_ratio, task);
+        });
+        var end = 3600 * 1000 / time_ratio;
+        log_lines = [];
+        page_timestamps = [];
+        page_timestamps_recorder = {};
+        keys_values = [];
+        record_log_entry(dateToString(new Date()) + " Loop started");
+        setTimeout(function () {
+          // Increment completed loops
+          completedLoops++;
+          if (completedLoops === loop_hours) {
+            console.log('Loop ended.');
+            // Reset UI
+            startTestBtn.innerText = 'Start test';
+            startTestBtn.removeAttribute('disabled');
+            testLengthEl.removeAttribute('disabled');
+            testSitesEl.removeAttribute('disabled');
+            // Stop timer
+            clearInterval(timerInterval);
+            // Allow screen to go to sleep again
+            chrome.power.releaseKeepAwake();
+          }
+        }, end);
+      });
+    }, 1000 + (i * 3600000));
   }
 }
 
 
-document.getElementById('start-test-btn').addEventListener('click', function () {
-  initialize();
+// Initialize toast UI
+const toastSaved = bootstrap.Toast.getOrCreateInstance(document.querySelector('#saved-toast'))
+
+// Start test button
+startTestBtn.addEventListener('click', function () {
+  setupTest();
+})
+
+// Copy test button
+document.getElementById('test-copy-btn').addEventListener('click', async function () {
+  const type = "text/plain";
+  const blob = new Blob([document.querySelector('#test-results').value], { type });
+  const data = [new ClipboardItem({ [type]: blob })];
+  await navigator.clipboard.write(data);
 })
 
 // Open Memory Saver page in browser
@@ -438,5 +517,43 @@ document.getElementById('open-memory-settings-link').addEventListener('click', f
   }
   chrome.tabs.create({
     'url': memUrl
+  })
+})
+
+// Read settings from storage
+chrome.storage.local.get({
+  testLength: 40,
+  sitesList: defaultSitesArray
+}, function (data) {
+  // Test length
+  testLengthEl.value = data.testLength;
+  // Sites list
+  testSitesEl.value = data.sitesList.join('\n');
+});
+
+// Read test from storage
+updateTimer(false, false);
+
+// Reset sites button
+sitesResetBtn.addEventListener('click', function () {
+  testSitesEl.value = defaultSitesArray.join('\n');
+  chrome.storage.local.set({
+    sitesList: defaultSitesArray
+  }, function () {
+    toastSaved.show();
+  })
+})
+
+// Save settings after any input change
+document.querySelectorAll('input,select,textarea').forEach(function (el) {
+  el.addEventListener('change', function () {
+    chrome.storage.local.set({
+      // Test length
+      testLength: parseInt(testLengthEl.value),
+      // Sites list
+      sitesList: testSitesEl.value.split('\n')
+    }, function () {
+      toastSaved.show();
+    })
   })
 })

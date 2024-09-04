@@ -3,8 +3,8 @@ chrome.action.onClicked.addListener(function() {
   chrome.windows.create({
     url: 'test.html',
     type: 'popup',
-    width: 500,
-    height: 400,
+    width: 550,
+    height: 620,
     left: 100,
     top: 100,
     focused: true
