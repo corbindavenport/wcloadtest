@@ -183,7 +183,7 @@ var tasks = [
     duration: minutes(6),
     focus: true,
     tabs: [
-      'https://www.youtube.com/embed/YE7VzlLtp-4?start=236&vq=hd720&autoplay=1&mute=1'
+      'https://www.youtube-nocookie.com/embed/YE7VzlLtp-4?start=236&vq=hd720&autoplay=1&mute=1'
     ]
   },
 ]
